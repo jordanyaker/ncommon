@@ -37,7 +37,7 @@ namespace NCommon.Data.EntityFramework.Tests
         public void Create_Returns_NHUnitOfWork_Instance_When_SessionFactoryProvider_Has_Been_Set()
         {
             var factory = new EFUnitOfWorkFactory();
-            factory.RegisterObjectContextProvider(() => new OrderEntities());
+            factory.RegisterContextProvider(() => new OrderEntities());
             var uowInstance = factory.Create();
 
             Assert.That(uowInstance, Is.Not.Null);

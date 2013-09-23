@@ -22,7 +22,7 @@ namespace NCommon.EntityFramework4.Tests.CodeOnly
         public virtual void FixtureSetup()
         {
             _unitOfWorkFactory = new EFUnitOfWorkFactory();
-            _unitOfWorkFactory.RegisterObjectContextProvider(() => new CodeOnlyContext("SandboxCodeOnly").Context);
+            _unitOfWorkFactory.RegisterContextProvider(() => new CodeOnlyContext("SandboxCodeOnly").Context);
 
             Locator = MockRepository.GenerateStub<IServiceLocator>();
             Locator.Stub(x => x.GetInstance<IUnitOfWorkFactory>()).Return(_unitOfWorkFactory);

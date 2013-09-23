@@ -14,42 +14,46 @@
 //limitations under the License. 
 #endregion
 
+using NCommon.Extensions;
+using StackExchange.Profiling;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
 using System.Data.Metadata.Edm;
-using System.Data.Objects;
-using NCommon.Extensions;
 
-namespace NCommon.Data.EntityFramework
-{
+namespace NCommon.Data.EntityFramework {
     /// <summary>
     /// Implementation of <see cref="IEFSessionResolver"/> that resolves <see cref="IEFSession"/> instances.
     /// </summary>
-    public class EFSessionResolver : IEFSessionResolver
-    {
-        readonly IDictionary<string, Guid> _objectContextTypeCache = new Dictionary<string, Guid>();
-        readonly IDictionary<Guid, Func<ObjectContext>> _objectContexts = new Dictionary<Guid, Func<ObjectContext>>();
+    public class EFSessionResolver : IEFSessionResolver {
+        readonly IDictionary<string, Guid> _DbContextTypeCache = new Dictionary<string, Guid>();
+        readonly IDictionary<Guid, Func<DbContext>> _contexts = new Dictionary<Guid, Func<DbContext>>();
 
         /// <summary>
-        /// Gets the number of <see cref="ObjectContext"/> instances registered with the session resolver.
+        /// Gets the number of <see cref="DbContext"/> instances registered with the session resolver.
         /// </summary>
-        public int ObjectContextsRegistered
-        {
-            get { return _objectContexts.Count; }
+        public int ContextsRegistered {
+            get { return _contexts.Count; }
         }
 
         /// <summary>
-        /// Gets the unique ObjectContext key for a type. 
+        /// Gets the unique DbContext key for a type. 
         /// </summary>
-        /// <typeparam name="T">The type for which the ObjectContext key should be retrieved.</typeparam>
+        /// <typeparam name="T">The type for which the DbContext key should be retrieved.</typeparam>
         /// <returns>A <see cref="Guid"/> representing the unique object context key.</returns>
-        public Guid GetSessionKeyFor<T>()
-        {
-            var typeName = typeof (T).Name;
-            Guid key;
-            if (!_objectContextTypeCache.TryGetValue(typeName, out key))
-                throw new ArgumentException("No ObjectContext has been registered for the specified type.");
-            return key;
+        public Guid GetSessionKeyFor<T>() {
+//#if DEBUG
+            using (MiniProfiler.Current.Step("EFSessionResolver.GetSessionKeyFor")) {
+//#endif
+                var typeName = typeof(T).Name;
+                Guid key;
+                if (!_DbContextTypeCache.TryGetValue(typeName, out key))
+                    throw new ArgumentException("No DbContext has been registered for the specified type.");
+                return key;
+//#if DEBUG
+            }
+//#endif
         }
 
         /// <summary>
@@ -57,38 +61,55 @@ namespace NCommon.Data.EntityFramework
         /// </summary>
         /// <typeparam name="T">The type for which an <see cref="IEFSession"/> is returned.</typeparam>
         /// <returns>An instance of <see cref="IEFSession"/>.</returns>
-        public IEFSession OpenSessionFor<T>()
-        {
-            var context = GetObjectContextFor<T>();
-            return new EFSession(context);
+        public IEFSession OpenSessionFor<T>() {
+//#if DEBUG
+            using (MiniProfiler.Current.Step("EFSessionResolver.OpenSessionFor")) {
+//#endif
+                var context = GetContextFor<T>();
+                return new EFSession(context);
+//#if DEBUG
+            }
+//#endif
         }
 
         /// <summary>
-        /// Gets the <see cref="ObjectContext"/> that can be used to query and update a given type.
+        /// Gets the <see cref="DbContext"/> that can be used to query and update a given type.
         /// </summary>
-        /// <typeparam name="T">The type for which an <see cref="ObjectContext"/> is returned.</typeparam>
-        /// <returns>An <see cref="ObjectContext"/> that can be used to query and update the given type.</returns>
-        public ObjectContext GetObjectContextFor<T>()
-        {
-            var typeName = typeof(T).Name;
-            Guid key;
-            if (!_objectContextTypeCache.TryGetValue(typeName, out key))
-                throw new ArgumentException("No ObjectContext has been registered for the specified type.");
-            return _objectContexts[key]();
+        /// <typeparam name="T">The type for which an <see cref="DbContext"/> is returned.</typeparam>
+        /// <returns>An <see cref="DbContext"/> that can be used to query and update the given type.</returns>
+        public DbContext GetContextFor<T>() {
+//#if DEBUG
+            using (MiniProfiler.Current.Step("EFSessionResolver.GetContextFor")) {
+//#endif
+                var typeName = typeof(T).Name;
+                Guid key;
+                if (!_DbContextTypeCache.TryGetValue(typeName, out key))
+                    throw new ArgumentException("No DbContext has been registered for the specified type.");
+                return _contexts[key]();
+//#if DEBUG
+            }
+//#endif
         }
 
         /// <summary>
-        /// Registers an <see cref="ObjectContext"/> provider with the resolver.
+        /// Registers an <see cref="DbContext"/> provider with the resolver.
         /// </summary>
-        /// <param name="contextProvider">A <see cref="Func{T}"/> of type <see cref="ObjectContext"/>.</param>
-        public void RegisterObjectContextProvider(Func<ObjectContext> contextProvider)
-        {
-            var key = Guid.NewGuid();
-            _objectContexts.Add(key, contextProvider);
-            //Getting the object context and populating the _objectContextTypeCache.
-            var context = contextProvider();
-            var entities = context.MetadataWorkspace.GetItems<EntityType>(DataSpace.CSpace);
-            entities.ForEach(entity => _objectContextTypeCache.Add(entity.Name, key));
+        /// <param name="contextProvider">A <see cref="Func{T}"/> of type <see cref="DbContext"/>.</param>
+        public void RegisterContextProvider(Func<DbContext> contextProvider) {
+//#if DEBUG
+            using (MiniProfiler.Current.Step("EFSessionResolver.RegisterContextProvider")) {
+//#endif
+                var key = Guid.NewGuid();
+                _contexts.Add(key, contextProvider);
+                //Getting the object context and populating the _DbContextTypeCache.
+                var context = contextProvider();
+                var objContext = (context as IObjectContextAdapter).ObjectContext;
+                var workspace = objContext.MetadataWorkspace;
+                var entities = workspace.GetItems<EntityType>(DataSpace.CSpace);
+                entities.ForEach(entity => _DbContextTypeCache.Add(entity.Name, key));
+//#if DEBUG
+            }
+//#endif
         }
     }
 }

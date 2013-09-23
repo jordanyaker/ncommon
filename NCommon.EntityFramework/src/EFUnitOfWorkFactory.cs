@@ -14,7 +14,9 @@
 //limitations under the License. 
 #endregion
 
+using StackExchange.Profiling;
 using System;
+using System.Data.Entity;
 using System.Data.Objects;
 
 namespace NCommon.Data.EntityFramework
@@ -27,16 +29,22 @@ namespace NCommon.Data.EntityFramework
     {
         EFSessionResolver _resolver = new EFSessionResolver();
         
-        /// Registers a <see cref="Func{T}"/> of type <see cref="ObjectContext"/> provider that can be used
-        /// to resolve instances of <see cref="ObjectContext"/>.
+        /// Registers a <see cref="Func{T}"/> of type <see cref="DbContext"/> provider that can be used
+        /// to resolve instances of <see cref="DbContext"/>.
         /// </summary>
-        /// <param name="contextProvider">A <see cref="Func{T}"/> of type <see cref="ObjectContext"/>.</param>
-        public void RegisterObjectContextProvider(Func<ObjectContext> contextProvider)
+        /// <param name="contextProvider">A <see cref="Func{T}"/> of type <see cref="DbContext"/>.</param>
+        public void RegisterContextProvider(Func<DbContext> contextProvider)
         {
-            Guard.Against<ArgumentNullException>(contextProvider == null,
-                                                 "Invalid object context provider registration. " +
-                                                 "Expected a non-null Func<ObjectContext> instance.");
-            _resolver.RegisterObjectContextProvider(contextProvider);
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFUnitOfWorkFactory.RegisterContextProvider")) {
+//#endif  
+                Guard.Against<ArgumentNullException>(contextProvider == null,
+                                                     "Invalid db context provider registration. " +
+                                                     "Expected a non-null Func<DbContext> instance.");
+                _resolver.RegisterContextProvider(contextProvider);
+//#if DEBUG
+            }
+//#endif
         }
 
         /// <summary>
@@ -45,13 +53,19 @@ namespace NCommon.Data.EntityFramework
         /// <returns>Instances of <see cref="EFUnitOfWork"/>.</returns>
         public IUnitOfWork Create()
         {
-            Guard.Against<InvalidOperationException>(
-               _resolver.ObjectContextsRegistered == 0,
-               "No ObjectContext providers have been registered. You must register ObjectContext providers using " +
-               "the RegisterObjectContextProvider method or use NCommon.Configure class to configure NCommon.EntityFramework " +
-               "using the EFConfiguration class and register ObjectContext instances using the WithObjectContext method.");
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFUnitOfWorkFactory.Create")) {
+//#endif  
+                Guard.Against<InvalidOperationException>(
+                   _resolver.ContextsRegistered == 0,
+                   "No DbContext providers have been registered. You must register DbContext providers using " +
+                   "the RegisterDbContextProvider method or use NCommon.Configure class to configure NCommon.EntityFramework " +
+                   "using the EFConfiguration class and register DbContext instances using the WithDbContext method.");
             
-            return new EFUnitOfWork(_resolver);
+                return new EFUnitOfWork(_resolver);
+//#if DEBUG 
+            }
+//#endif  
         }
     }
 }

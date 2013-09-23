@@ -14,9 +14,10 @@
 //limitations under the License. 
 #endregion
 
+using NCommon.Extensions;
+using StackExchange.Profiling;
 using System;
 using System.Collections.Generic;
-using NCommon.Extensions;
 
 namespace NCommon.Data.EntityFramework
 {
@@ -38,9 +39,15 @@ namespace NCommon.Data.EntityFramework
         /// Entity Framework unit of work instances.</param>
         public EFUnitOfWork(IEFSessionResolver resolver)
         {
-            Guard.Against<ArgumentNullException>(resolver == null,
-                                                 "Expected a non-null EFUnitOfWorkSettings instance.");
-            _resolver = resolver;
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFUnitOfWork()")) {
+//#endif  
+                Guard.Against<ArgumentNullException>(resolver == null,
+                                                     "Expected a non-null EFUnitOfWorkSettings instance.");
+                _resolver = resolver;
+//#if DEBUG
+            }
+//#endif  
         }
 
         /// <summary>
@@ -50,18 +57,24 @@ namespace NCommon.Data.EntityFramework
         /// <returns>An <see cref="IEFSession"/> that can be used to query and update the specified type.</returns>
         public IEFSession GetSession<T>()
         {
-            Guard.Against<ObjectDisposedException>(_disposed,
-                                                   "The current EFUnitOfWork instance has been disposed. " + 
-                                                   "Cannot get sessions from a disposed UnitOfWork instance.");
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFUnitOfWork.GetSession")) {
+//#endif
+                Guard.Against<ObjectDisposedException>(_disposed,
+                                                       "The current EFUnitOfWork instance has been disposed. " +
+                                                       "Cannot get sessions from a disposed UnitOfWork instance.");
 
-            var sessionKey = _resolver.GetSessionKeyFor<T>();
-            if (_openSessions.ContainsKey(sessionKey))
-                return _openSessions[sessionKey];
+                var sessionKey = _resolver.GetSessionKeyFor<T>();
+                if (_openSessions.ContainsKey(sessionKey))
+                    return _openSessions[sessionKey];
 
-            //Opening a new session...
-            var session = _resolver.OpenSessionFor<T>();
-            _openSessions.Add(sessionKey, session);
-            return session;
+                //Opening a new session...
+                var session = _resolver.OpenSessionFor<T>();
+                _openSessions.Add(sessionKey, session);
+                return session;
+//#if DEBUG
+            }
+//#endif  
         }
 
         /// <summary>
@@ -69,11 +82,17 @@ namespace NCommon.Data.EntityFramework
         /// </summary>
         public void Flush()
         {
-            Guard.Against<ObjectDisposedException>(_disposed,
-                                                   "The current EFUnitOfWork instance has been disposed. " +
-                                                   "Cannot get sessions from a disposed UnitOfWork instance.");
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFUnitOfWork.Flush")) {
+//#endif
+                Guard.Against<ObjectDisposedException>(_disposed,
+                                                       "The current EFUnitOfWork instance has been disposed. " +
+                                                       "Cannot get sessions from a disposed UnitOfWork instance.");
 
-            _openSessions.ForEach(session => session.Value.SaveChanges());
+                _openSessions.ForEach(session => session.Value.SaveChanges());
+//#if DEBUG
+            }
+//#endif  
         }
 
         /// <summary>
@@ -82,8 +101,14 @@ namespace NCommon.Data.EntityFramework
         /// <filterpriority>2</filterpriority>
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFUnitOfWork.Dispose")) {
+//#endif
+                Dispose(true);
+                GC.SuppressFinalize(this);
+//#if DEBUG
+            }
+//#endif  
         }
 
         /// <summary>
@@ -92,18 +117,22 @@ namespace NCommon.Data.EntityFramework
         /// <param name="disposing"></param>
         void Dispose(bool disposing)
         {
-            if (_disposed) return;
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFUnitOfWork.Dispose")) {
+//#endif
+                if (_disposed) return;
 
-            if (disposing)
-            {
-                if (_openSessions != null && _openSessions.Count > 0)
-                {
-                    _openSessions.ForEach(session => session.Value.Dispose());
-                    _openSessions.Clear();
+                if (disposing) {
+                    if (_openSessions != null && _openSessions.Count > 0) {
+                        _openSessions.ForEach(session => session.Value.Dispose());
+                        _openSessions.Clear();
+                    }
                 }
+                _openSessions = null;
+                _disposed = true;
+//#if DEBUG
             }
-            _openSessions = null;
-            _disposed = true;
+//#endif  
         }
     }
 }

@@ -15,12 +15,12 @@
 #endregion
 
 using System;
-using System.Data.Objects;
+using System.Data.Entity;
 
 namespace NCommon.Data.EntityFramework
 {
     /// <summary>
-    /// Interface implemented by a custom resolver for Entity Framework that resolves <see cref="ObjectContext"/>
+    /// Interface implemented by a custom resolver for Entity Framework that resolves <see cref="DbContext"/>
     /// instances for a type.
     /// </summary>
     public interface IEFSessionResolver
@@ -28,7 +28,7 @@ namespace NCommon.Data.EntityFramework
         /// <summary>
         /// Gets the unique <see cref="IEFSession"/> key for a type. 
         /// </summary>
-        /// <typeparam name="T">The type for which the ObjectContext key should be retrieved.</typeparam>
+        /// <typeparam name="T">The type for which the DbContext key should be retrieved.</typeparam>
         /// <returns>A <see cref="Guid"/> representing the unique object context key.</returns>
         Guid GetSessionKeyFor<T>();
 
@@ -40,21 +40,21 @@ namespace NCommon.Data.EntityFramework
         IEFSession OpenSessionFor<T>();
 
         /// <summary>
-        /// Gets the <see cref="ObjectContext"/> that can be used to query and update a given type.
+        /// Gets the <see cref="DbContext"/> that can be used to query and update a given type.
         /// </summary>
-        /// <typeparam name="T">The type for which an <see cref="ObjectContext"/> is returned.</typeparam>
-        /// <returns>An <see cref="ObjectContext"/> that can be used to query and update the given type.</returns>
-        ObjectContext GetObjectContextFor<T>();
+        /// <typeparam name="T">The type for which an <see cref="DbContext"/> is returned.</typeparam>
+        /// <returns>An <see cref="DbContext"/> that can be used to query and update the given type.</returns>
+        DbContext GetContextFor<T>();
 
         /// <summary>
-        /// Registers an <see cref="ObjectContext"/> provider with the resolver.
+        /// Registers an <see cref="DbContext"/> provider with the resolver.
         /// </summary>
-        /// <param name="contextProvider">A <see cref="Func{T}"/> of type <see cref="ObjectContext"/>.</param>
-        void RegisterObjectContextProvider(Func<ObjectContext> contextProvider);
+        /// <param name="contextProvider">A <see cref="Func{T}"/> of type <see cref="DbContext"/>.</param>
+        void RegisterContextProvider(Func<DbContext> contextProvider);
 
         /// <summary>
-        /// Gets the count of <see cref="ObjectContext"/> providers registered with the resolver.
+        /// Gets the count of <see cref="DbContext"/> providers registered with the resolver.
         /// </summary>
-        int ObjectContextsRegistered { get; }
+        int ContextsRegistered { get; }
     }
 }

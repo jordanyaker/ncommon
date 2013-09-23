@@ -23,7 +23,7 @@ namespace NCommon.EntityFramework4.Tests.POCO
         {
             _unitOfWorkFactory = new EFUnitOfWorkFactory();
             ConnectionString = ConfigurationManager.ConnectionStrings["Sandbox"].ConnectionString;
-            _unitOfWorkFactory.RegisterObjectContextProvider(() => new PocoContext(ConnectionString));
+            _unitOfWorkFactory.RegisterContextProvider(() => new PocoContext(ConnectionString));
 
             Locator = MockRepository.GenerateStub<IServiceLocator>();
             Locator.Stub(x => x.GetInstance<IUnitOfWorkFactory>()).Return(_unitOfWorkFactory);

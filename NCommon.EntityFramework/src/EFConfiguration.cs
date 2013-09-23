@@ -17,6 +17,8 @@
 using System;
 using System.Data.Objects;
 using NCommon.Configuration;
+using System.Data.Entity;
+using StackExchange.Profiling;
 
 namespace NCommon.Data.EntityFramework
 {
@@ -28,17 +30,23 @@ namespace NCommon.Data.EntityFramework
         readonly EFUnitOfWorkFactory _factory = new EFUnitOfWorkFactory();
 
         /// <summary>
-        /// Configures unit of work instances to use the specified <see cref="ObjectContext"/>.
+        /// Configures unit of work instances to use the specified <see cref="DbContext"/>.
         /// </summary>
-        /// <param name="objectContextProvider">A <see cref="Func{T}"/> of type <see cref="ObjectContext"/>
-        /// that can be used to construct <see cref="ObjectContext"/> instances.</param>
+        /// <param name="contextProvider">A <see cref="Func{T}"/> of type <see cref="DbContext"/>
+        /// that can be used to construct <see cref="DbContext"/> instances.</param>
         /// <returns><see cref="EFConfiguration"/></returns>
-        public EFConfiguration WithObjectContext(Func<ObjectContext> objectContextProvider)
+        public EFConfiguration WithContext(Func<DbContext> contextProvider)
         {
-            Guard.Against<ArgumentNullException>(objectContextProvider == null,
-                                                 "Expected a non-null Func<ObjectContext> instance.");
-            _factory.RegisterObjectContextProvider(objectContextProvider);
-            return this;
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFConfiguration.WithContext")) {
+//#endif  
+                Guard.Against<ArgumentNullException>(contextProvider == null,
+                                                     "Expected a non-null Func<DbContext> instance.");
+                _factory.RegisterContextProvider(contextProvider);
+                return this;
+//#if DEBUG
+            }
+//#endif
         }
 
         /// <summary>
@@ -48,8 +56,14 @@ namespace NCommon.Data.EntityFramework
         /// registering components.</param>
         public void Configure(IContainerAdapter containerAdapter)
         {
-            containerAdapter.RegisterInstance<IUnitOfWorkFactory>(_factory);
-            containerAdapter.RegisterGeneric(typeof(IRepository<>), typeof(EFRepository<>));
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFConfiguration.Configure")) {
+//#endif  
+                containerAdapter.RegisterInstance<IUnitOfWorkFactory>(_factory);
+                containerAdapter.RegisterGeneric(typeof(IRepository<>), typeof(EFRepository<>));
+//#if DEBUG
+            }
+//#endif
         }
     }
 }

@@ -16,15 +16,16 @@
 
 using System;
 using System.Data;
-using System.Data.Objects;
+using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
 
 namespace NCommon.Data.EntityFramework
 {
     /// <summary>
-    /// Defines an interface that wraps a <see cref="ObjectContext"/> instance.
+    /// Defines an interface that wraps a <see cref="DbContext"/> instance.
     /// </summary>
     /// <remarks>
-    /// Since it's difficut to actually mock a ObjectContext and its Connection property,
+    /// Since it's difficut to actually mock a DbContext and its Connection property,
     /// to facillitate testing, the IEFSession interface is used to actually
     /// wrap the underlying data context.
     /// 
@@ -35,12 +36,12 @@ namespace NCommon.Data.EntityFramework
     public interface IEFSession : IDisposable
     {
         /// <summary>
-        /// Gets the underlying <see cref="ObjectContext"/>
+        /// Gets the underlying <see cref="DbContext"/>
         /// </summary>
-        ObjectContext Context { get; }
+        DbContext Context { get; }
 
         /// <summary>
-        /// Gets the Connection used by the <see cref="ObjectContext"/>
+        /// Gets the Connection used by the <see cref="DbContext"/>
         /// </summary>
         IDbConnection Connection { get;}
 
@@ -57,13 +58,13 @@ namespace NCommon.Data.EntityFramework
         void Delete<T>(T entity) where T : class;
 
         /// <summary>
-        /// Attaches an entity to the context. Changes to the entityt will be tracked by the underlying <see cref="ObjectContext"/>
+        /// Attaches an entity to the context. Changes to the entityt will be tracked by the underlying <see cref="DbContext"/>
         /// </summary>
         /// <param name="entity"></param>
         void Attach<T>(T entity) where T : class;
 
         /// <summary>
-        /// Detaches an entity from the context. Changes to the entity will not be tracked by the underlying <see cref="ObjectContext"/>.
+        /// Detaches an entity from the context. Changes to the entity will not be tracked by the underlying <see cref="DbContext"/>.
         /// </summary>
         /// <param name="entity"></param>
         void Detach<T>(T entity)  where T : class;
@@ -74,13 +75,14 @@ namespace NCommon.Data.EntityFramework
         /// <param name="entity"></param>
         void Refresh<T>(T entity) where T : class;
 
+
         /// <summary>
-        /// Creates an <see cref="ObjectQuery"/> of <typeparamref name="T"/> that can be used
+        /// Creates an <see cref="DbQuery"/> of <typeparamref name="T"/> that can be used
         /// to query the entity.
         /// </summary>
         /// <typeparam name="T">The entityt type to query.</typeparam>
-        /// <returns>A <see cref="ObjectQuery{T}"/> instance.</returns>
-        ObjectQuery<T> CreateQuery<T>() where T : class;
+        /// <returns>A <see cref="DbQuery{T}"/> instance.</returns>
+        DbQuery<T> CreateQuery<T>() where T : class;
 
         /// <summary>
         /// Saves changes made to the object context to the database.

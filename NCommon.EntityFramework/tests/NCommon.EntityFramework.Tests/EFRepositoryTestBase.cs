@@ -36,8 +36,8 @@ namespace NCommon.Data.EntityFramework.Tests
             };
 
             UnitOfWorkFactory = new EFUnitOfWorkFactory();
-            UnitOfWorkFactory.RegisterObjectContextProvider(HRContextProvider);
-            UnitOfWorkFactory.RegisterObjectContextProvider(OrdersContextProvider);
+            UnitOfWorkFactory.RegisterContextProvider(HRContextProvider);
+            UnitOfWorkFactory.RegisterContextProvider(OrdersContextProvider);
 
             Locator = MockRepository.GenerateStub<IServiceLocator>();
             Locator.Stub(x => x.GetInstance<IUnitOfWorkFactory>()).Return(UnitOfWorkFactory);

@@ -1,9 +1,9 @@
-﻿using System;
+﻿using StackExchange.Profiling;
+using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Objects;
-using System.Data.Objects.DataClasses;
-using System.Reflection;
+using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
 
 namespace NCommon.Data.EntityFramework
 {
@@ -13,72 +13,58 @@ namespace NCommon.Data.EntityFramework
         ///   Internal implementation of the <see cref = "IEFSession" /> interface.
         /// </summary>
         bool _disposed;
-        readonly ObjectContext _context;
+        readonly DbContext _context;
 
         /// <summary>
         ///   Default Constructor.
         ///   Creates a new instance of the <see cref = "EFSession" /> class.
         /// </summary>
         /// <param name = "context"></param>
-        public EFSession(ObjectContext context)
+        public EFSession(DbContext context)
         {
-            Guard.Against<ArgumentNullException>(context == null, "Expected a non-null ObjectContext instance.");
-            _context = context;
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFSession()")) {
+//#endif  
+                Guard.Against<ArgumentNullException>(context == null, "Expected a non-null DbContext instance.");
+                _context = context;
+//#if DEBUG 
+            }
+//#endif  
         }
 
         /// <summary>
-        ///   Gets the underlying <see cref = "ObjectContext" />
+        ///   Gets the underlying <see cref = "DbContext" />
         /// </summary>
-        public ObjectContext Context
+        public DbContext Context
         {
             get { return _context; }
         }
 
         /// <summary>
-        ///   Gets the Connection used by the <see cref = "ObjectContext" />
+        ///   Gets the Connection used by the <see cref = "DbContext" />
         /// </summary>
         public IDbConnection Connection
         {
-            get { return _context.Connection; }
+            get { return _context.Database.Connection; }
         }
 
-#if EF_1_0
-        readonly IDictionary<Type, PropertyInfo> _entitySetProperties = new Dictionary<Type, PropertyInfo>();
+        readonly Dictionary<Type, object> _dbSets = new Dictionary<Type, object>();
 
-        string GetEntitySetName<T>() where T : class
+        DbSet<T> GetDbSet<T>() where T : class
         {
-            if (!_entitySetProperties.ContainsKey(typeof(T)))
-                DiscoverEntitySet<T>();
-            return _entitySetProperties[typeof (T)].Name;
-        }
-
-        void DiscoverEntitySet<T>()
-        {
-            var matchingType = typeof(ObjectQuery<T>);
-            foreach (var property in _context.GetType().GetProperties())
-            {
-                if (property.PropertyType.IsGenericType &&
-                    matchingType.IsAssignableFrom(property.PropertyType))
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFSession.GetDbSet")) {
+//#endif  
+                object set = null;
+                if (!_dbSets.TryGetValue(typeof (T), out set))
                 {
-                    _entitySetProperties.Add(typeof(T), property);
-                    return;
+                    set = _context.Set<T>();
+                    _dbSets.Add(typeof(T), set);
                 }
+                return (DbSet<T>) set;
+//#if DEBUG 
             }
-            throw new InvalidOperationException("An ObjectQuery for entity type " + typeof (T).FullName +
-                                                " could not be found on the ObjectContext registered with the UnitOfWork.");
-        }
-
-        /// <summary>
-        /// Creates an <see cref="ObjectQuery"/> of <typeparamref name="T"/> that can be used
-        /// to query the entity.
-        /// </summary>
-        /// <typeparam name="T">The entityt type to query.</typeparam>
-        /// <returns>A <see cref="ObjectQuery{T}"/> instance.</returns>
-        public ObjectQuery<T> CreateQuery<T>() where T : class
-        {
-            if (!_entitySetProperties.ContainsKey(typeof(T)))
-                DiscoverEntitySet<T>();
-            return (ObjectQuery<T>) _entitySetProperties[typeof (T)].GetValue(_context, null);
+//#endif  
         }
 
         /// <summary>
@@ -87,74 +73,13 @@ namespace NCommon.Data.EntityFramework
         /// <param name = "entity"></param>
         public void Add<T>(T entity) where T : class
         {
-            _context.AddObject(GetEntitySetName<T>(), entity);
-        }
-
-        /// <summary>
-        /// Deletes an entity instance from the context.
-        /// </summary>
-        /// <param name="entity"></param>
-        public void Delete<T>(T entity) where T : class
-        {
-            _context.DeleteObject(entity);
-        }
-
-        /// <summary>
-        /// Attaches an entity to the context. Changes to the entityt will be tracked by the underlying <see cref="ObjectContext"/>
-        /// </summary>
-        /// <param name="entity"></param>
-        public void Attach<T>(T entity) where T : class
-        {
-            _context.Attach((IEntityWithKey) entity);
-        }
-
-        /// <summary>
-        /// Detaches an entity from the context. Changes to the entity will not be tracked by the underlying <see cref="ObjectContext"/>.
-        /// </summary>
-        /// <param name="entity"></param>
-        public void Detach<T>(T entity) where T : class
-        {
-            _context.Detach(entity);
-        }
-
-        /// <summary>
-        /// Refreshes an entity.
-        /// </summary>
-        /// <param name="entity"></param>
-        public void Refresh<T>(T entity) where T : class
-        {
-            _context.Refresh(RefreshMode.StoreWins, entity);
-        }
-
-        /// <summary>
-        /// Saves changes made to the object context to the database.
-        /// </summary>
-        public void SaveChanges()
-        {
-            _context.SaveChanges(true);
-        }
-#else
-        
-        readonly Dictionary<Type, object> _objectSets = new Dictionary<Type, object>();
-
-        ObjectSet<T> GetObjectSet<T>() where T : class
-        {
-            object set = null;
-            if (!_objectSets.TryGetValue(typeof (T), out set))
-            {
-                set = _context.CreateObjectSet<T>();
-                _objectSets.Add(typeof (T), set);
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFSession.Add")) {
+//#endif  
+                GetDbSet<T>().Add(entity);
+//#if DEBUG 
             }
-            return (ObjectSet<T>) set;
-        }
-
-        /// <summary>
-        ///   Adds a transient instance to the context associated with the session.
-        /// </summary>
-        /// <param name = "entity"></param>
-        public void Add<T>(T entity) where T : class
-        {
-            GetObjectSet<T>().AddObject(entity);
+//#endif  
         }
 
         /// <summary>
@@ -163,34 +88,49 @@ namespace NCommon.Data.EntityFramework
         /// <param name="entity"></param>
         public void Delete<T>(T entity) where T : class
         {
-            GetObjectSet<T>().DeleteObject(entity);
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFSession.Delete")) {
+//#endif  
+                GetDbSet<T>().Remove(entity);
+//#if DEBUG 
+            }
+//#endif  
         }
 
         /// <summary>
-        /// Attaches an entity to the context. Changes to the entityt will be tracked by the underlying <see cref="ObjectContext"/>
+        /// Attaches an entity to the context. Changes to the entityt will be tracked by the underlying <see cref="DbContext"/>
         /// </summary>
         /// <param name="entity"></param>
         public void Attach<T>(T entity) where T : class
         {
-            //If the entity implementes the IEntityWithKey interface then we should use Context's Attach metho
-            //instead of the set's Attach. Getting an exception 
-            //"Mapping and metadata information could not be found for EntityType 'System.Data.Objects.DataClasses.IEntityWithKey"
-            //when using set's Attach.
-            var entityWithKey = entity as IEntityWithKey;
-            if (entityWithKey != null)
-                _context.Attach(entityWithKey);
-            else
-                GetObjectSet<T>().Attach(entity);
-            _context.ObjectStateManager.ChangeObjectState(entity, EntityState.Modified);
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFSession.Attach")) {
+//#endif  
+                //If the entity implementes the IEntityWithKey interface then we should use Context's Attach metho
+                //instead of the set's Attach. Getting an exception 
+                //"Mapping and metadata information could not be found for EntityType 'System.Data.Objects.DataClasses.IEntityWithKey"
+                //when using set's Attach.
+                GetDbSet<T>().Attach(entity);
+                _context.Entry<T>(entity).State = EntityState.Modified;
+//#if DEBUG 
+            }
+//#endif  
         }
 
         /// <summary>
-        /// Detaches an entity from the context. Changes to the entity will not be tracked by the underlying <see cref="ObjectContext"/>.
+        /// Detaches an entity from the context. Changes to the entity will not be tracked by the underlying <see cref="DbContext"/>.
         /// </summary>
         /// <param name="entity"></param>
         public void Detach<T>(T entity) where T : class
         {
-            GetObjectSet<T>().Detach(entity);
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFSession.Detach")) {
+//#endif  
+                _context.Entry<T>(entity).State = EntityState.Detached;
+//#if DEBUG 
+            }
+//#endif  
+
         }
 
         /// <summary>
@@ -199,18 +139,30 @@ namespace NCommon.Data.EntityFramework
         /// <param name="entity"></param>
         public void Refresh<T>(T entity) where T : class
         {
-            _context.Refresh(RefreshMode.StoreWins, entity);
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFSession.Refresh")) {
+//#endif  
+                _context.Entry<T>(entity).Reload();
+//#if DEBUG 
+            }
+//#endif  
         }
 
         /// <summary>
-        /// Creates an <see cref="ObjectQuery"/> of <typeparamref name="T"/> that can be used
+        /// Creates a <see cref="DbQuery"/> of <typeparamref name="T"/> that can be used
         /// to query the entity.
         /// </summary>
         /// <typeparam name="T">The entityt type to query.</typeparam>
-        /// <returns>A <see cref="ObjectQuery{T}"/> instance.</returns>
-        public ObjectQuery<T> CreateQuery<T>() where T : class
+        /// <returns>A <see cref="DbQuery{T}"/> instance.</returns>
+        public DbQuery<T> CreateQuery<T>() where T : class
         {
-            return _context.CreateObjectSet<T>();
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFSession.CreateQuery")) {
+//#endif  
+                return (GetDbSet<T>() as DbQuery<T>);
+//#if DEBUG 
+            }
+//#endif  
         }
 
         /// <summary>
@@ -218,17 +170,29 @@ namespace NCommon.Data.EntityFramework
         /// </summary>
         public void SaveChanges()
         {
-            _context.SaveChanges();
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFSession.SaveChanges")) {
+//#endif
+                _context.SaveChanges();
+//#if DEBUG
+            }
+//#endif  
         }
-#endif
+
         /// <summary>
         ///   Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
         /// <filterpriority>2</filterpriority>
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFSession.Dispose")) {
+//#endif
+                Dispose(true);
+                GC.SuppressFinalize(this);
+//#if DEBUG
+            }
+//#endif  
         }
 
         /// <summary>
@@ -237,13 +201,19 @@ namespace NCommon.Data.EntityFramework
         /// <param name = "disposing"></param>
         void Dispose(bool disposing)
         {
-            if (!disposing)
-                return;
-            if (_disposed)
-                return;
+//#if DEBUG 
+            using (MiniProfiler.Current.Step("EFSession.Dispose")) {
+//#endif
+                if (!disposing)
+                    return;
+                if (_disposed)
+                    return;
 
-            _context.Dispose();
-            _disposed = true;
+                _context.Dispose();
+                _disposed = true;
+//#if DEBUG
+            }
+//#endif  
         }
     }
 }

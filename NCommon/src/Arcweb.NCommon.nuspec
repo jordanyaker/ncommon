@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>Arcweb.NCommon</id>
+    <version>1.3.1</version>
+    <authors>Jordan Yaker</authors>
+    <owners>Jordan Yaker</owners>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0.html</licenseUrl>
+    <projectUrl>https://github.com/jordanyaker/ncommon</projectUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>An extension to the original NCommon framework (available at https://github.com/riteshrao/ncommon) with a focus on better EF 5 integraiton and instrumentation with the MVC Mini Profiler.</description>
+    <tags>DDD ORM Framework</tags>
+    <dependencies>
+        <dependency id="Common.Logging" version="2.0.0"/>
+        <dependency id="CommonServiceLocator" version="1.0"/>
+        <dependency id="EntityFramework" version="5.0.0" />
+        <dependency id="MiniProfiler" version="2.1.0" />
+    </dependencies>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="System.Web"/>
+      <frameworkAssembly assemblyName="System.Web.Abstractions"/>
+      <frameworkAssembly assemblyName="System.Transactions"/>
+    </frameworkAssemblies>
+  </metadata>
+</package>

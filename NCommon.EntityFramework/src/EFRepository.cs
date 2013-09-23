@@ -16,8 +16,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data.Objects;
-using System.Data.Objects.DataClasses;
+using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -33,7 +33,7 @@ namespace NCommon.Data.EntityFramework
     /// </summary>
     public class EFRepository<TEntity> : RepositoryBase<TEntity> where TEntity : class
     {
-        readonly IEFSession _privateSession;
+        IEFSession _privateSession;
         readonly List<string> _includes = new List<string>();
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace NCommon.Data.EntityFramework
         }        
 
         /// <summary>
-        /// Gets the <see cref="ObjectContext"/> to be used by the repository.
+        /// Gets the <see cref="DbContext"/> to be used by the repository.
         /// </summary>
         private IEFSession Session
         {

@@ -2,5 +2,5 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("NCommon.Mvc")]
+[assembly: AssemblyTitle("Arcweb.NCommon.Mvc.dll")]
 [assembly: AssemblyDescription("NCommon Mvc Extensions")]

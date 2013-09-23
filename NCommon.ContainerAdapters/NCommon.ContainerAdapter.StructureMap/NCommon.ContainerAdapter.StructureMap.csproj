@@ -9,10 +9,12 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>NCommon.ContainerAdapter.StructureMap</RootNamespace>
-    <AssemblyName>NCommon.ContainerAdapter.StructureMap</AssemblyName>
+    <AssemblyName>Arcweb.NCommon.ContainerAdapter.StructureMap</AssemblyName>
     <TargetFrameworkVersion Condition="$(TargetFrameworkVersion)==''">v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -60,10 +62,11 @@
     <None Include="..\..\ncommon.snk">
       <Link>ncommon.snk</Link>
     </None>
-    <None Include="NCommon.ContainerAdapter.StructureMap.nuspec" />
+    <None Include="Arcweb.NCommon.ContainerAdapter.StructureMap.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
